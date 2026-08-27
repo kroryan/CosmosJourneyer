@@ -4,19 +4,20 @@ import PressInteraction from "@brianchirls/game-input/interactions/PressInteract
 
 import { InputDevices } from "@/frontend/inputs/devices";
 import { InputMap } from "@/frontend/inputs/inputMap";
+import { MobileControls } from "@/frontend/inputs/mobileControls";
 
 const keyboard = InputDevices.KEYBOARD;
 const pointer = InputDevices.POINTER;
 
 const landingAction = new Action({
-    bindings: [keyboard.getControl("KeyL")],
+    bindings: [keyboard.getControl("KeyL"), MobileControls.buttons.land],
 });
 
 const landingInteraction = new PressInteraction(landingAction);
 
 const emitLandingRequest = new PressInteraction(
     new Action({
-        bindings: [keyboard.getControl("KeyY")],
+        bindings: [keyboard.getControl("KeyY"), MobileControls.buttons.interact],
     }),
 );
 
@@ -26,7 +27,10 @@ const upDown = new AxisComposite({
 });
 
 const upDownAction = new Action({
-    bindings: [upDown],
+    bindings: [
+        upDown,
+        new AxisComposite({ positive: MobileControls.buttons.space, negative: MobileControls.buttons.down }),
+    ],
 });
 
 const throttle = new AxisComposite({
@@ -35,14 +39,21 @@ const throttle = new AxisComposite({
 });
 
 const throttleAction = new Action({
-    bindings: [throttle],
+    bindings: [throttle, MobileControls.leftStick.y],
 });
 
 const rollPitch = new Action({
-    bindings: [pointer.getControl("position")],
+    bindings: [pointer.getControl("position"), MobileControls.rightStick],
     processors: [
         (value: [number, number]): [number, number] => {
             let [pointerX, pointerY] = value;
+
+            if (Math.abs(pointerX) <= 1 && Math.abs(pointerY) <= 1) {
+                const deadZone = 0.1;
+                pointerX = Math.sign(pointerX) * Math.max(0, Math.abs(pointerX) - deadZone) ** 2;
+                pointerY = Math.sign(pointerY) * Math.max(0, Math.abs(pointerY) - deadZone) ** 2;
+                return [pointerX, -pointerY];
+            }
 
             // to range [0, 1]
             pointerX /= window.innerWidth;
@@ -67,8 +78,18 @@ const rollPitch = new Action({
     ],
 });
 
+const cameraLook = new Action({
+    bindings: [MobileControls.rightStick],
+});
+
+const toggleCameraInteraction = new PressInteraction(
+    new Action({
+        bindings: [keyboard.getControl("KeyB"), MobileControls.buttons.camera],
+    }),
+);
+
 const toggleWarpDrive = new Action({
-    bindings: [keyboard.getControl("KeyH")],
+    bindings: [keyboard.getControl("KeyH"), MobileControls.buttons.warp],
 });
 
 const toggleWarpDriveInteraction = new PressInteraction(toggleWarpDrive);
@@ -78,26 +99,26 @@ const ignorePointer = new Action({
 });
 
 const throttleToZero = new Action({
-    bindings: [keyboard.getControl("KeyX")],
+    bindings: [keyboard.getControl("KeyX"), MobileControls.buttons.zero],
 });
 
 const throttleToZeroInteraction = new PressInteraction(throttleToZero);
 
 const previousMissionInteraction = new PressInteraction(
     new Action({
-        bindings: [keyboard.getControl("BracketLeft")],
+        bindings: [keyboard.getControl("BracketLeft"), MobileControls.buttons.previousMission],
     }),
 );
 
 const nextMissionInteraction = new PressInteraction(
     new Action({
-        bindings: [keyboard.getControl("BracketRight")],
+        bindings: [keyboard.getControl("BracketRight"), MobileControls.buttons.nextMission],
     }),
 );
 
 const resetCameraInteraction = new PressInteraction(
     new Action({
-        bindings: [keyboard.getControl("Numpad0"), keyboard.getControl("Digit0")],
+        bindings: [keyboard.getControl("Numpad0"), keyboard.getControl("Digit0"), MobileControls.buttons.reset],
     }),
 );
 
@@ -143,6 +164,8 @@ export const SpaceShipControlsInputs = new InputMap("SpaceShipInputs", {
     upDown: upDownAction,
     throttle: throttleAction,
     rollPitch: rollPitch,
+    cameraLook: cameraLook,
+    toggleCamera: toggleCameraInteraction,
     toggleWarpDrive: toggleWarpDriveInteraction,
     ignorePointer: ignorePointer,
     throttleToZero: throttleToZeroInteraction,

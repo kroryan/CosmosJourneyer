@@ -49,6 +49,7 @@ import plotItineraryImgSrc from "@assets/tutorials/starMapTutorial/plotItinerary
 import saveData from "@assets/tutorials/starMapTutorial/save.json";
 
 export class StarMapTutorial implements Tutorial {
+    readonly id = "starMap" as const;
     readonly coverImageSrc: string = coverImgSrc;
 
     getSaveData(universeBackend: UniverseBackend): Result<Save, SaveLoadingError> {

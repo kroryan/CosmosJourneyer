@@ -3,13 +3,14 @@ import PressInteraction from "@brianchirls/game-input/interactions/PressInteract
 
 import { InputDevices } from "./devices";
 import { InputMap } from "./inputMap";
+import { MobileControls } from "./mobileControls";
 
 const keyboard = InputDevices.KEYBOARD;
 
 const togglePauseKey = keyboard.getControl("Escape");
 
 const togglePauseAction = new Action({
-    bindings: [togglePauseKey],
+    bindings: [togglePauseKey, MobileControls.buttons.pause],
 });
 
 const togglePauseInteraction = new PressInteraction(togglePauseAction);
@@ -17,7 +18,7 @@ const togglePauseInteraction = new PressInteraction(togglePauseAction);
 const toggleStarMapKey = keyboard.getControl("KeyM");
 
 const toggleStarMapAction = new Action({
-    bindings: [toggleStarMapKey],
+    bindings: [toggleStarMapKey, MobileControls.buttons.map],
 });
 
 const toggleStarMapInteraction = new PressInteraction(toggleStarMapAction);

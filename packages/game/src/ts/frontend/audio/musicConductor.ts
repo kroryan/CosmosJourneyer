@@ -35,8 +35,6 @@ export class MusicConductor {
     private volume = 1;
     private readonly fadeSeconds = 3;
 
-    private readonly pauseMusicWhenPaused = false;
-
     private readonly starSystemView: StarSystemView;
 
     private readonly musics: Musics;
@@ -103,18 +101,29 @@ export class MusicConductor {
         return this.volume;
     }
 
+    public pause(): void {
+        if (this.currentMusic?.state === SoundState.Started) {
+            this.currentMusic.pause();
+        }
+    }
+
+    public resume(): void {
+        if (this.currentMusic?.state === SoundState.Paused) {
+            this.currentMusic.play();
+        }
+    }
+
     public update(isPaused: boolean, isInStarSystemView: boolean, isInMainMenu: boolean, deltaSeconds: number): void {
+        if (isPaused) {
+            this.pause();
+            return;
+        }
+
         if (this.currentMusic !== null) {
-            if (isPaused && this.pauseMusicWhenPaused && this.currentMusic.state === SoundState.Started) {
-                this.currentMusic.pause();
-                return;
-            } else if (!isPaused && this.currentMusic.state === SoundState.Paused) {
-                this.currentMusic.play();
-                return;
-            }
+            this.resume();
 
             // if the music has finished playing, set it to null
-            if (!isPaused && this.currentMusic.state === SoundState.Stopped) {
+            if (this.currentMusic.state === SoundState.Stopped) {
                 this.currentMusic = null;
                 this.silenceSeconds = 30 + (Math.random() - 0.5) * 20;
             }

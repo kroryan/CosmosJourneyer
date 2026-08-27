@@ -81,6 +81,7 @@ async function startCosmosJourneyer(): Promise<void> {
         if (latestSave !== null) {
             await engine.loadSave(latestSave);
             engine.starSystemView.setUIEnabled(true);
+            await engine.restoreInterruptedTutorial();
             return;
         }
     }

@@ -27,6 +27,7 @@ import { type PhysicsEngineV2 } from "@babylonjs/core/Physics/v2";
 import type { Scene } from "@babylonjs/core/scene";
 import { AxisComposite } from "@brianchirls/game-input/browser";
 import type DPadComposite from "@brianchirls/game-input/controls/DPadComposite";
+import { Capacitor } from "@capacitor/core";
 import { metersToLightYears } from "@cosmos-journeyer/physics";
 import type { DeepReadonly } from "@cosmos-journeyer/typescript";
 import {
@@ -55,6 +56,7 @@ import { getNeighborStarSystemCoordinates } from "@/frontend/helpers/getNeighbor
 import { axisCompositeToString, dPadCompositeToString } from "@/frontend/helpers/inputControlsString";
 import { positionNearObjectBrightSide } from "@/frontend/helpers/positionNearObject";
 import { getRotationQuaternion, lookAt, setRotationQuaternion, setUpVector } from "@/frontend/helpers/transform";
+import { MobileControls } from "@/frontend/inputs/mobileControls";
 import { StarSystemInputs } from "@/frontend/inputs/starSystemInputs";
 import { type Mission } from "@/frontend/missions/mission";
 import { type MissionContext } from "@/frontend/missions/missionContext";
@@ -145,6 +147,8 @@ export class StarSystemView implements View {
     readonly scene: Scene;
 
     private activeControls: Controls | null = null;
+
+    private gameplayInputsEnabled = true;
 
     private readonly physicsEngine: PhysicsEngineV2;
 
@@ -718,7 +722,7 @@ export class StarSystemView implements View {
 
                             await this.setActiveControls(shipControls);
 
-                            SpaceShipControlsInputs.setEnabled(true);
+                            this.setActiveControlInputsEnabled();
                             this.spaceShipLayer.setVisibility(true);
 
                             const vehicle = this.vehicleControls.getVehicle();
@@ -1153,6 +1157,8 @@ export class StarSystemView implements View {
         const shipControls = this.getSpaceshipControls();
         const characterControls = this.getCharacterControls();
 
+        shipControls.setCameraControlEnabled(false);
+
         this.spaceShipLayer.setVisibility(this.isUiEnabled);
 
         characterControls.getTransform().setEnabled(false);
@@ -1176,7 +1182,7 @@ export class StarSystemView implements View {
 
         shipControls.syncCameraTransform();
 
-        SpaceShipControlsInputs.setEnabled(true);
+        this.setActiveControlInputsEnabled();
     }
 
     /**
@@ -1206,6 +1212,7 @@ export class StarSystemView implements View {
         SpaceShipControlsInputs.setEnabled(false);
         VehicleInputs.setEnabled(false);
         this.stopBackgroundSounds();
+        this.setActiveControlInputsEnabled();
     }
 
     /**
@@ -1234,7 +1241,7 @@ export class StarSystemView implements View {
         const previousControls = this.activeControls;
         await this.setActiveControls(defaultControls);
 
-        DefaultControlsInputs.setEnabled(true);
+        this.setActiveControlInputsEnabled();
 
         if (previousControls !== null && this.activeControls !== null) {
             this.activeControls
@@ -1284,10 +1291,34 @@ export class StarSystemView implements View {
         VehicleInputs.setEnabled(true);
 
         await this.setActiveControls(this.vehicleControls);
+        this.setActiveControlInputsEnabled();
     }
 
     public getActiveControls(): Controls | null {
         return this.activeControls;
+    }
+
+    public setGameplayInputsEnabled(enabled: boolean): void {
+        this.gameplayInputsEnabled = enabled;
+        this.setActiveControlInputsEnabled();
+    }
+
+    public resetSpaceshipCamera(): void {
+        if (this.activeControls !== this.spaceshipControls) {
+            return;
+        }
+
+        const shipControls = this.getSpaceshipControls();
+        shipControls.resetCameraImmediately();
+    }
+
+    private setActiveControlInputsEnabled(): void {
+        SpaceShipControlsInputs.setEnabled(
+            this.gameplayInputsEnabled && this.activeControls === this.spaceshipControls,
+        );
+        CharacterInputs.setEnabled(this.gameplayInputsEnabled && this.activeControls === this.characterControls);
+        DefaultControlsInputs.setEnabled(this.gameplayInputsEnabled && this.activeControls === this.defaultControls);
+        VehicleInputs.setEnabled(this.gameplayInputsEnabled && this.activeControls === this.vehicleControls);
     }
 
     private getGroundedAvatarSpawnPosition(desiredSpawnPosition: Vector3, up: Vector3): Vector3 {
@@ -1310,6 +1341,7 @@ export class StarSystemView implements View {
 
     private async setActiveControls(controls: Controls): Promise<void> {
         this.activeControls = controls;
+        this.setActiveControlInputsEnabled();
         this.scene.activeCameras?.forEach((camera) => {
             camera.detachControl();
         });
@@ -1364,6 +1396,20 @@ export class StarSystemView implements View {
     public setUIEnabled(enabled: boolean): void {
         this.isUiEnabled = enabled;
         this.notificationManager.setVisible(enabled);
+        if (Capacitor.isNativePlatform()) {
+            MobileControls.setVisible(enabled);
+        }
+
+        const activeControls = this.getActiveControls();
+        const spaceship = this.getSpaceshipControls().getSpaceship();
+        const isSpaceshipView = activeControls === this.spaceshipControls;
+        const isLanded = spaceship.isLandedAtFacility();
+
+        this.spaceShipLayer.setVisibility(enabled && isSpaceshipView && !isLanded);
+        this.targetCursorLayer.setEnabled(enabled && isSpaceshipView && !isLanded);
+        if (!enabled) {
+            this.spaceStationLayer.setVisibility(false);
+        }
     }
 
     public setTarget(target: (Transformable & HasBoundingSphere & TypedObject) | null): void {

@@ -21,6 +21,7 @@ import PressInteraction from "@brianchirls/game-input/interactions/PressInteract
 
 import { InputDevices } from "@/frontend/inputs/devices";
 import { InputMap } from "@/frontend/inputs/inputMap";
+import { MobileControls } from "@/frontend/inputs/mobileControls";
 
 const keyboard = InputDevices.KEYBOARD;
 
@@ -30,6 +31,7 @@ const accelerateAction = new Action({
             positive: keyboard.getControl("KeyW"),
             negative: keyboard.getControl("KeyS"),
         }),
+        MobileControls.leftStick.y,
     ],
 });
 
@@ -39,27 +41,28 @@ const steerAction = new Action({
             positive: keyboard.getControl("KeyD"),
             negative: keyboard.getControl("KeyA"),
         }),
+        MobileControls.leftStick.x,
     ],
 });
 
 const brakeAction = new Action({
-    bindings: [keyboard.getControl("Space")],
+    bindings: [keyboard.getControl("Space"), MobileControls.buttons.brake],
 });
 
 const boostAction = new Action({
-    bindings: [keyboard.getControl("ShiftLeft")],
+    bindings: [keyboard.getControl("ShiftLeft"), MobileControls.buttons.boost],
 });
 
 const toggleCameraAction = new Action({
-    bindings: [keyboard.getControl("KeyB")],
+    bindings: [keyboard.getControl("KeyB"), MobileControls.buttons.camera],
 });
 
 const toggleDoorsAction = new Action({
-    bindings: [keyboard.getControl("KeyI")],
+    bindings: [keyboard.getControl("KeyI"), MobileControls.buttons.interact],
 });
 
 const resetCameraAction = new Action({
-    bindings: [keyboard.getControl("Numpad0"), keyboard.getControl("Digit0")],
+    bindings: [keyboard.getControl("Numpad0"), keyboard.getControl("Digit0"), MobileControls.buttons.reset],
 });
 
 const switchToCameraPreset1 = new PressInteraction(

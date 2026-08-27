@@ -21,7 +21,10 @@ import { type Save } from "@/backend/save/saveFileData";
 import { type SaveLoadingError } from "@/backend/save/saveLoadingError";
 import { type UniverseBackend } from "@/backend/universe/universeBackend";
 
+export type TutorialId = "flight" | "fuelScoop" | "stationLanding" | "starMap" | "planetaryLanding" | "template";
+
 export interface Tutorial {
+    readonly id: TutorialId;
     getTitle(): string;
     readonly coverImageSrc: string;
     getDescription(): string;

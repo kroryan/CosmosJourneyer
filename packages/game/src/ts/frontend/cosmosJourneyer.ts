@@ -31,7 +31,7 @@ import { VideoRecorder } from "@babylonjs/core/Misc/videoRecorder";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { Scene } from "@babylonjs/core/scene";
 import HavokPhysics from "@babylonjs/havok";
-import type { DeepReadonly } from "@cosmos-journeyer/typescript";
+import { assertUnreachable, type DeepReadonly } from "@cosmos-journeyer/typescript";
 import { type StarSystemCoordinates, getUniverseObjectId } from "@cosmos-journeyer/universe-model";
 
 import type { ICosmosJourneyerBackend } from "@/backend";
@@ -144,6 +144,8 @@ export class CosmosJourneyer {
 
     private isAutoSaveEnabled = true;
 
+    private lifecycleSavePromise: Promise<void> | null = null;
+
     private constructor(
         player: Player,
         engine: AbstractEngine,
@@ -208,6 +210,13 @@ export class CosmosJourneyer {
 
         this.tutorialLayer = new TutorialLayer(this.soundPlayer);
         document.body.appendChild(this.tutorialLayer.root);
+        this.tutorialLayer.onEnabledChanged.add((enabled) => {
+            this.starSystemView.setGameplayInputsEnabled(!enabled);
+            if (!enabled) {
+                this.starSystemView.resetSpaceshipCamera();
+                this.starSystemView.setUIEnabled(true);
+            }
+        });
 
         this.sidePanels = new SidePanels(
             this.backend.universe,
@@ -224,6 +233,7 @@ export class CosmosJourneyer {
                 await this.resume();
                 this.starSystemView.setUIEnabled(true);
                 await this.loadSave(saveData);
+                await this.restoreInterruptedTutorial();
             });
         });
 
@@ -235,11 +245,12 @@ export class CosmosJourneyer {
             this.soundPlayer,
         );
         this.mainMenu.onStartObservable.add(async () => {
+            await this.starSystemView.switchToSpaceshipControls();
             await this.tutorialLayer.setTutorial(new FlightTutorial());
             this.tutorialLayer.onQuitTutorial.addOnce(() => {
                 this.player.tutorials.flightCompleted = true;
             });
-            await this.starSystemView.switchToSpaceshipControls();
+            this.starSystemView.setUIEnabled(true);
             const spaceshipPosition = this.starSystemView.getSpaceshipControls().getTransform().getAbsolutePosition();
             const closestSpaceStation = this.starSystemView
                 .getStarSystem()
@@ -352,10 +363,21 @@ export class CosmosJourneyer {
         this.initializeDesktopUpdates();
 
         window.addEventListener("blur", () => {
-            if (!this.mainMenu.isVisible() && !this.starSystemView.isLoadingSystem()) {
-                this.pause();
-            }
+            this.pauseForLifecycleChange();
         });
+
+        const pauseWhenHidden = (): void => {
+            if (document.visibilityState === "hidden") {
+                this.pauseForLifecycleChange();
+            }
+        };
+
+        const pauseOnPageHide = (): void => {
+            this.pauseForLifecycleChange();
+        };
+
+        document.addEventListener("visibilitychange", pauseWhenHidden);
+        window.addEventListener("pagehide", pauseOnPageHide);
 
         window.addEventListener("mouseleave", () => {
             if (!this.mainMenu.isVisible() && !this.starSystemView.isLoadingSystem()) {
@@ -367,11 +389,8 @@ export class CosmosJourneyer {
             this.engine.resize(true);
         });
 
-        window.addEventListener("beforeunload", async () => {
-            if (this.mainMenu.isVisible()) {
-                return;
-            } // don't autosave if the main menu is visible: the player is not in the game yet
-            await this.createAutoSave();
+        window.addEventListener("beforeunload", () => {
+            this.pauseForLifecycleChange();
         });
 
         GeneralInputs.map.toggleStarMap.on("complete", async () => {
@@ -564,6 +583,7 @@ export class CosmosJourneyer {
         this.state = "paused";
 
         document.exitPointerLock();
+        this.musicConductor.pause();
 
         if (this.activeView === this.starSystemView) {
             this.starSystemView.stopBackgroundSounds();
@@ -578,6 +598,7 @@ export class CosmosJourneyer {
             return;
         }
         this.state = "running";
+        this.musicConductor.resume();
         this.soundPlayer.playNow("click");
         this.pauseMenu.setVisibility(false);
 
@@ -930,7 +951,7 @@ export class CosmosJourneyer {
     /**
      * Generates a save file data object from the current star system and the player's position
      */
-    public async generateSaveData(): Promise<Save> {
+    public async generateSaveData(includeThumbnail = true): Promise<Save> {
         const spaceShipControls = this.starSystemView.getSpaceshipControls();
         const spaceship = spaceShipControls.getSpaceship();
 
@@ -957,7 +978,7 @@ export class CosmosJourneyer {
         };
 
         const camera = this.activeView.getMainScene().activeCamera;
-        if (camera === null) {
+        if (!includeThumbnail || camera === null) {
             return saveData;
         }
 
@@ -1000,7 +1021,7 @@ export class CosmosJourneyer {
     /**
      * Generate save file data and store it in the autosaves hashmap in local storage
      */
-    public async createAutoSave(): Promise<void> {
+    public async createAutoSave(includeThumbnail = true): Promise<void> {
         if (!this.isAutoSaveEnabled) {
             return;
         }
@@ -1008,7 +1029,7 @@ export class CosmosJourneyer {
             return;
         } // don't autosave in tutorial
 
-        const saveData = await this.generateSaveData();
+        const saveData = await this.generateSaveData(includeThumbnail);
 
         // use player uuid as key to avoid overwriting other cmdr's autosave
         const uuid = saveData.player.uuid;
@@ -1055,7 +1076,7 @@ export class CosmosJourneyer {
             await this.loadSave(saveResult.value);
             this.player.uuid = Settings.TUTORIAL_SAVE_UUID;
             await this.resume();
-            await this.tutorialLayer.setTutorial(tutorial);
+            await this.tutorialLayer.setTutorial(tutorial, { persistForContinue: false });
             this.tutorialLayer.onQuitTutorial.addOnce(async () => {
                 await this.promptReturnToMainMenuAfterMenuTutorial();
             });
@@ -1101,12 +1122,49 @@ export class CosmosJourneyer {
         this.starSystemView.initStarSystem(Date.now() / 1000);
     }
 
+    public async restoreInterruptedTutorial(): Promise<void> {
+        const interruptedTutorial = this.tutorialLayer.getInterruptedTutorial();
+        if (interruptedTutorial === null || this.player.uuid === Settings.TUTORIAL_SAVE_UUID) {
+            return;
+        }
+
+        let tutorial: Tutorial;
+        switch (interruptedTutorial.tutorialId) {
+            case "flight":
+                tutorial = new FlightTutorial();
+                break;
+            case "fuelScoop":
+                tutorial = new FuelScoopTutorial();
+                break;
+            case "stationLanding":
+                tutorial = new StationLandingTutorial();
+                break;
+            case "starMap":
+                tutorial = new StarMapTutorial();
+                break;
+            case "planetaryLanding":
+                tutorial = new PlanetaryLandingTutorial();
+                break;
+            case "template":
+                this.tutorialLayer.clearInterruptedTutorial();
+                return;
+            default:
+                return assertUnreachable(interruptedTutorial.tutorialId);
+        }
+
+        await this.tutorialLayer.setTutorial(tutorial, {
+            initialPanelIndex: interruptedTutorial.panelIndex,
+        });
+    }
+
     /**
      * Loads a save file and apply it. This will generate the requested star system and position the player at the requested position around the requested orbital object.
      * This will perform engine initialization if the engine is not initialized.
      * @param saveData The save file data to load
      */
     public async loadSave(saveData: DeepReadonly<Save>): Promise<void> {
+        this.tutorialLayer.setEnabled(false);
+
         const playerLocation = saveData.playerLocation;
 
         let locationToUse;
@@ -1170,11 +1228,32 @@ export class CosmosJourneyer {
 
         await this.loadLocation(locationToUse);
 
+        this.starSystemView.setUIEnabled(true);
         this.engine.loadingScreen.hideLoadingUI();
 
         if (this.player.currentItinerary !== null) {
             this.starSystemView.setSystemAsTarget(this.player.currentItinerary[1]);
         }
+    }
+
+    private pauseForLifecycleChange(): void {
+        if (this.mainMenu.isVisible() || this.starSystemView.isLoadingSystem()) {
+            return;
+        }
+
+        this.pause();
+
+        if (this.lifecycleSavePromise !== null) {
+            return;
+        }
+
+        this.lifecycleSavePromise = this.createAutoSave(false)
+            .catch((error: unknown) => {
+                console.error("Could not create lifecycle autosave", error);
+            })
+            .finally(() => {
+                this.lifecycleSavePromise = null;
+            });
     }
 
     public async loadLocation(location: UniverseCoordinates): Promise<void> {

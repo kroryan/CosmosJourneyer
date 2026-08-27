@@ -39,6 +39,7 @@ import stationPadApproachImageSrc from "@assets/tutorials/stationLandingTutorial
 import stationServicesImageSrc from "@assets/tutorials/stationLandingTutorial/stationServices.webp";
 
 export class StationLandingTutorial implements Tutorial {
+    readonly id = "stationLanding" as const;
     readonly coverImageSrc: string = station1ImageSrc;
 
     getSaveData(universeBackend: UniverseBackend): Result<Save, SaveLoadingError> {

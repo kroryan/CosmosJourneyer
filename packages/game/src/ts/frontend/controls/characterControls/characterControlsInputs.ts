@@ -5,6 +5,7 @@ import PressInteraction from "@brianchirls/game-input/interactions/PressInteract
 
 import { InputDevices } from "@/frontend/inputs/devices";
 import { InputMap } from "@/frontend/inputs/inputMap";
+import { MobileControls } from "@/frontend/inputs/mobileControls";
 
 const keyboard = InputDevices.KEYBOARD;
 
@@ -21,11 +22,11 @@ const kbdWASD = new DPadComposite({
  * The action will respond to whichever control is used.
  */
 const moveAction = new Action({
-    bindings: [kbdWASD],
+    bindings: [kbdWASD, MobileControls.leftStick],
 });
 
 const jumpAction = new Action({
-    bindings: [keyboard.getControl("Space")],
+    bindings: [keyboard.getControl("Space"), MobileControls.buttons.space],
 });
 
 const jumpInteraction = new PressInteraction(jumpAction);
@@ -36,30 +37,33 @@ const swimVerticalAxis = new AxisComposite({
 });
 
 const swimVerticalAction = new Action({
-    bindings: [swimVerticalAxis],
+    bindings: [
+        swimVerticalAxis,
+        new AxisComposite({ positive: MobileControls.buttons.space, negative: MobileControls.buttons.down }),
+    ],
 });
 
 const danceKey = keyboard.getControl("KeyX");
 const danceInteraction = new PressInteraction(
     new Action({
-        bindings: [danceKey],
+        bindings: [danceKey, MobileControls.buttons.dance],
     }),
 );
 
 const sitOnGroundInteraction = new PressInteraction(
     new Action({
-        bindings: [keyboard.getControl("KeyZ")],
+        bindings: [keyboard.getControl("KeyZ"), MobileControls.buttons.sit],
     }),
 );
 
 const runKey = keyboard.getControl("ShiftLeft");
 const runAction = new Action({
-    bindings: [runKey],
+    bindings: [runKey, MobileControls.buttons.boost],
 });
 
 const toggleCameraInteraction = new PressInteraction(
     new Action({
-        bindings: [keyboard.getControl("KeyB")],
+        bindings: [keyboard.getControl("KeyB"), MobileControls.buttons.camera],
     }),
 );
 

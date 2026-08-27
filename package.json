@@ -37,10 +37,12 @@
         "build:desktop": "pnpm --filter @cosmos-journeyer/desktop-electron build",
         "build:game": "pnpm --filter @cosmos-journeyer/game build",
         "build:website": "pnpm --filter @cosmos-journeyer/website build",
+        "build:android": "pnpm build:game && cap sync android",
         "dev:channel-packer": "pnpm --filter @cosmos-journeyer/channel-packer dev",
         "dev:desktop": "pnpm --filter @cosmos-journeyer/desktop-electron dev",
         "dev:game": "pnpm --filter @cosmos-journeyer/game serve",
         "dev:website": "pnpm --filter @cosmos-journeyer/website dev",
+        "package:android": "pnpm build:android && cd android && ./gradlew assembleDebug",
         "package:desktop": "pnpm --filter @cosmos-journeyer/desktop-electron package",
         "format": "pnpm -r format",
         "format:check": "pnpm -r format:check",
@@ -53,6 +55,9 @@
         "prepare": "husky"
     },
     "devDependencies": {
+        "@capacitor/android": "^8.5.0",
+        "@capacitor/cli": "^8.5.0",
+        "@capacitor/core": "^8.5.0",
         "@eslint/js": "catalog:",
         "@next/eslint-plugin-next": "catalog:",
         "eslint": "catalog:",

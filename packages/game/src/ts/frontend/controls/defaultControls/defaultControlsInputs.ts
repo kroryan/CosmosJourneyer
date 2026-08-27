@@ -4,6 +4,7 @@ import DPadComposite from "@brianchirls/game-input/controls/DPadComposite";
 
 import { InputDevices } from "@/frontend/inputs/devices";
 import { InputMap } from "@/frontend/inputs/inputMap";
+import { MobileControls } from "@/frontend/inputs/mobileControls";
 
 const keyboard = InputDevices.KEYBOARD;
 
@@ -20,7 +21,7 @@ const kbdWASD = new DPadComposite({
  * The action will respond to whichever control is used.
  */
 const moveAction = new Action({
-    bindings: [kbdWASD],
+    bindings: [kbdWASD, MobileControls.leftStick],
 });
 
 const keyboardSpeed = new AxisComposite({
@@ -29,7 +30,10 @@ const keyboardSpeed = new AxisComposite({
 });
 
 const changeSpeedAction = new Action({
-    bindings: [keyboardSpeed],
+    bindings: [
+        keyboardSpeed,
+        new AxisComposite({ positive: MobileControls.buttons.boost, negative: MobileControls.buttons.brake }),
+    ],
 });
 
 const upDown = new AxisComposite({
@@ -38,7 +42,10 @@ const upDown = new AxisComposite({
 });
 
 const upDownAction = new Action({
-    bindings: [upDown],
+    bindings: [
+        upDown,
+        new AxisComposite({ positive: MobileControls.buttons.space, negative: MobileControls.buttons.down }),
+    ],
 });
 
 const roll = new AxisComposite({
@@ -56,7 +63,7 @@ const pitch = new AxisComposite({
 });
 
 const pitchAction = new Action({
-    bindings: [pitch],
+    bindings: [pitch, MobileControls.rightStick.y],
 });
 
 const yaw = new AxisComposite({
@@ -65,7 +72,7 @@ const yaw = new AxisComposite({
 });
 
 const yawAction = new Action({
-    bindings: [yaw],
+    bindings: [yaw, MobileControls.rightStick.x],
 });
 
 export const DefaultControlsInputs = new InputMap("DefaultControlsInputs", {

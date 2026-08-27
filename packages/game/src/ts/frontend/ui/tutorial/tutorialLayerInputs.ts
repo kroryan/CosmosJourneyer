@@ -3,18 +3,19 @@ import PressInteraction from "@brianchirls/game-input/interactions/PressInteract
 
 import { InputDevices } from "@/frontend/inputs/devices";
 import { InputMap } from "@/frontend/inputs/inputMap";
+import { MobileControls } from "@/frontend/inputs/mobileControls";
 
 const keyboard = InputDevices.KEYBOARD;
 
 const nextPanel = new PressInteraction(
     new Action({
-        bindings: [keyboard.getControl("Space")],
+        bindings: [keyboard.getControl("Space"), MobileControls.buttons.space],
     }),
 );
 
 const prevPanel = new PressInteraction(
     new Action({
-        bindings: [keyboard.getControl("Backspace")],
+        bindings: [keyboard.getControl("Backspace"), MobileControls.buttons.down],
     }),
 );
 

@@ -37,6 +37,7 @@ import howToFuelScoop from "@assets/tutorials/fuelScoopTutorial/howToFuelScoop.w
 import saveData from "@assets/tutorials/fuelScoopTutorial/save.json";
 
 export class FuelScoopTutorial implements Tutorial {
+    readonly id = "fuelScoop" as const;
     readonly coverImageSrc: string = welcomeImageSrc;
 
     getSaveData(universeBackend: UniverseBackend): Result<Save, SaveLoadingError> {

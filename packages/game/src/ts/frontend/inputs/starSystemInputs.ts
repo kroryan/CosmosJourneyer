@@ -3,41 +3,42 @@ import PressInteraction from "@brianchirls/game-input/interactions/PressInteract
 
 import { InputDevices } from "./devices";
 import { InputMap } from "./inputMap";
+import { MobileControls } from "./mobileControls";
 
 const keyboard = InputDevices.KEYBOARD;
 
 const setTargetAction = new Action({
-    bindings: [keyboard.getControl("KeyT")],
+    bindings: [keyboard.getControl("KeyT"), MobileControls.buttons.target],
 });
 
 const setTargetInteraction = new PressInteraction(setTargetAction);
 
 const toggleSpaceShipCharacterAction = new Action({
-    bindings: [keyboard.getControl("KeyE")],
+    bindings: [keyboard.getControl("KeyE"), MobileControls.buttons.interact],
 });
 
 const toggleSpaceShipCharacterInteraction = new PressInteraction(toggleSpaceShipCharacterAction);
 
 const jumpToSystemAction = new Action({
-    bindings: [keyboard.getControl("KeyJ")],
+    bindings: [keyboard.getControl("KeyJ"), MobileControls.buttons.jump],
 });
 
 const jumpToSystemInteraction = new PressInteraction(jumpToSystemAction);
 
 const toggleUiAction = new Action({
-    bindings: [keyboard.getControl("KeyU")],
+    bindings: [keyboard.getControl("KeyU"), MobileControls.buttons.ui],
 });
 
 const toggleUiInteraction = new PressInteraction(toggleUiAction);
 
 const toggleOrbitsAndAxisAction = new Action({
-    bindings: [keyboard.getControl("KeyO")],
+    bindings: [keyboard.getControl("KeyO"), MobileControls.buttons.orbits],
 });
 
 const toggleOrbitsAndAxisInteraction = new PressInteraction(toggleOrbitsAndAxisAction);
 
 const cycleViewsAction = new Action({
-    bindings: [keyboard.getControl("KeyC")],
+    bindings: [keyboard.getControl("KeyC"), MobileControls.buttons.view],
 });
 
 const cycleViewsInteraction = new PressInteraction(cycleViewsAction);

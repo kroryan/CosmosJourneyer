@@ -5,11 +5,12 @@ import PressInteraction from "@brianchirls/game-input/interactions/PressInteract
 
 import { InputDevices } from "@/frontend/inputs/devices";
 import { InputMap } from "@/frontend/inputs/inputMap";
+import { MobileControls } from "@/frontend/inputs/mobileControls";
 
 const keyboard = InputDevices.KEYBOARD;
 
 const focusOnCurrentSystemAction = new Action({
-    bindings: [keyboard.getControl("KeyF")],
+    bindings: [keyboard.getControl("KeyF"), MobileControls.buttons.focus],
 });
 
 const focusOnCurrentSystemInteraction = new PressInteraction(focusOnCurrentSystemAction);
@@ -27,7 +28,7 @@ const kbdWASD = new DPadComposite({
  * The action will respond to whichever control is used.
  */
 const moveAction = new Action({
-    bindings: [kbdWASD],
+    bindings: [kbdWASD, MobileControls.leftStick],
 });
 
 const keyboardSpeed = new AxisComposite({
@@ -36,7 +37,10 @@ const keyboardSpeed = new AxisComposite({
 });
 
 const changeSpeedAction = new Action({
-    bindings: [keyboardSpeed],
+    bindings: [
+        keyboardSpeed,
+        new AxisComposite({ positive: MobileControls.buttons.boost, negative: MobileControls.buttons.brake }),
+    ],
 });
 
 const upDown = new AxisComposite({
@@ -45,7 +49,10 @@ const upDown = new AxisComposite({
 });
 
 const upDownAction = new Action({
-    bindings: [upDown],
+    bindings: [
+        upDown,
+        new AxisComposite({ positive: MobileControls.buttons.space, negative: MobileControls.buttons.down }),
+    ],
 });
 
 export const StarMapInputs = new InputMap("StarMapInputs", {

@@ -35,6 +35,7 @@ import saveData from "@assets/tutorials/flightTutorial/save.json";
 import welcomeImageSrc from "@assets/tutorials/flightTutorial/welcome.webp";
 
 export class TemplateTutorial implements Tutorial {
+    readonly id = "template" as const;
     readonly coverImageSrc: string = welcomeImageSrc;
 
     getSaveData(universeBackend: UniverseBackend): Result<Save, SaveLoadingError> {

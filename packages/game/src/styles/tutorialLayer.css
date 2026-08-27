@@ -20,6 +20,7 @@
 
         transform: translate(0);
         transition: transform 0.5s ease-in-out;
+        pointer-events: none;
 
         &.hidden {
             transform: translate(-100%);
@@ -68,12 +69,18 @@
             display: flex;
             justify-content: space-evenly;
             margin-bottom: 1vh;
+            pointer-events: auto;
 
-            p {
+            button {
                 background: white;
                 color: black;
                 padding: 0.3vw;
                 font-size: calc(var(--text-size) * 0.75);
+                border: 0;
+                font-family: inherit;
+                cursor: pointer;
+                touch-action: manipulation;
+                pointer-events: auto;
 
                 display: flex;
                 align-items: center;
@@ -89,6 +96,7 @@
                     }
                 }
 
+                &:disabled,
                 &.disabled {
                     background: rgba(255, 255, 255, 0.5);
                     color: rgba(0, 0, 0, 0.5);

@@ -43,6 +43,7 @@ import warpImageSrc from "@assets/tutorials/flightTutorial/warp.webp";
 import welcomeImageSrc from "@assets/tutorials/flightTutorial/welcome.webp";
 
 export class FlightTutorial implements Tutorial {
+    readonly id = "flight" as const;
     readonly coverImageSrc: string = welcomeImageSrc;
 
     getSaveData(universeBackend: UniverseBackend): Result<Save, SaveLoadingError> {

@@ -31,6 +31,7 @@ import { type Controls } from "@/frontend/controls";
 import { createCameraShakeAnimation } from "@/frontend/helpers/animations/cameraShake";
 import { pressInteractionToStrings } from "@/frontend/helpers/inputControlsString";
 import { pitch, roll, yaw } from "@/frontend/helpers/transform";
+import { isTouchDevice, MobileControls } from "@/frontend/inputs/mobileControls";
 import { StarSystemInputs } from "@/frontend/inputs/starSystemInputs";
 import { type HasBoundingSphere } from "@/frontend/universe/architecture/hasBoundingSphere";
 import { type Transformable } from "@/frontend/universe/architecture/transformable";
@@ -84,6 +85,7 @@ export class ShipControls implements Controls {
     private readonly landingHandler: () => void;
     private readonly emitLandingRequestHandler: () => void;
     private readonly throttleToZeroHandler: () => void;
+    private readonly toggleCameraHandler: () => void;
     private readonly resetCameraHandler: (presetName: ThirdPersonCameraPresetNames) => void;
     private readonly cameraPresetInputHandlers: Array<{
         readonly input: CameraPresetInput;
@@ -93,6 +95,8 @@ export class ShipControls implements Controls {
     private readonly tts: ITts;
     private readonly soundPlayer: ISoundPlayer;
     private readonly notificationManager: INotificationManager;
+
+    private cameraControlEnabled = false;
 
     constructor(
         ship: Spaceship,
@@ -133,7 +137,19 @@ export class ShipControls implements Controls {
             2;
         this.thirdPersonCamera.upperRadiusLimit = 500;
 
+        if (isTouchDevice()) {
+            this.thirdPersonCamera.inputs.removeByType("ArcRotateCameraPointersInput");
+            this.firstPersonCamera.inputs.removeByType("FreeCameraMouseInput");
+            this.firstPersonCamera.inputs.removeByType("FreeCameraTouchInput");
+        }
+
         this.cameraShakeAnimation = null;
+
+        this.toggleCameraHandler = (): void => {
+            this.setCameraControlEnabled(!this.cameraControlEnabled);
+        };
+
+        SpaceShipControlsInputs.map.toggleCamera.on("complete", this.toggleCameraHandler);
 
         this.toggleWarpDriveHandler = async (): Promise<void> => {
             const spaceship = this.getSpaceship();
@@ -357,7 +373,18 @@ export class ShipControls implements Controls {
 
     public update(deltaSeconds: number): void {
         const spaceship = this.getSpaceship();
-        let [inputRoll, inputPitch] = SpaceShipControlsInputs.map.rollPitch.value;
+        let [inputRoll, inputPitch] = this.cameraControlEnabled ? [0, 0] : SpaceShipControlsInputs.map.rollPitch.value;
+
+        if (this.cameraControlEnabled) {
+            const [cameraX, cameraY] = SpaceShipControlsInputs.map.cameraLook.value;
+            const cameraSensitivity = 1.8;
+            this.thirdPersonCamera.alpha -= cameraX * cameraSensitivity * deltaSeconds;
+            this.thirdPersonCamera.beta = Math.min(
+                Math.PI - 0.1,
+                Math.max(0.1, this.thirdPersonCamera.beta - cameraY * cameraSensitivity * deltaSeconds),
+            );
+        }
+
         if (SpaceShipControlsInputs.map.ignorePointer.value > 0 || spaceship.isAutoPiloted()) {
             inputRoll *= 0;
             inputPitch *= 0;
@@ -464,8 +491,26 @@ export class ShipControls implements Controls {
     }
 
     reset(): void {
+        this.setCameraControlEnabled(false);
         this.resetCameraHandler("behindCentered");
         this.closestLandableFacility = null;
+    }
+
+    resetCameraImmediately(): void {
+        this.setCameraControlEnabled(false);
+        this.thirdPersonCameraAnimation = null;
+
+        const preset = thirdPersonCameraPresets.behindCentered;
+        this.thirdPersonCamera.alpha = preset.alpha;
+        this.thirdPersonCamera.beta = preset.beta;
+        this.thirdPersonCamera.radius = preset.radius;
+        this.thirdPersonCamera.target.copyFrom(preset.target);
+        this.syncCameraTransform();
+    }
+
+    public setCameraControlEnabled(enabled: boolean): void {
+        this.cameraControlEnabled = enabled;
+        MobileControls.setButtonActive("camera", enabled);
     }
 
     setSpaceship(ship: Spaceship): void {
@@ -564,6 +609,7 @@ export class ShipControls implements Controls {
         SpaceShipControlsInputs.map.landing.off("complete", this.landingHandler);
         SpaceShipControlsInputs.map.emitLandingRequest.off("complete", this.emitLandingRequestHandler);
         SpaceShipControlsInputs.map.throttleToZero.off("complete", this.throttleToZeroHandler);
+        SpaceShipControlsInputs.map.toggleCamera.off("complete", this.toggleCameraHandler);
         for (const { input, handler } of this.cameraPresetInputHandlers) {
             input.off("complete", handler);
         }

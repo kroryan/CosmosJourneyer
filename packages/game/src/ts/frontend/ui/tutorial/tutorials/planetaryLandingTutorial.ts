@@ -52,6 +52,7 @@ function getSpaceshipUpKeys(keyboardLayoutMap: Map<string, string> | null): stri
 }
 
 export class PlanetaryLandingTutorial implements Tutorial {
+    readonly id = "planetaryLanding" as const;
     readonly coverImageSrc: string = welcomeImageSrc;
 
     getSaveData(universeBackend: UniverseBackend): Result<Save, SaveLoadingError> {
